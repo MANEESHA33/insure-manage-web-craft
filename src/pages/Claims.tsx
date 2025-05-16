@@ -1,22 +1,14 @@
 
 import React, { useState } from "react";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -24,229 +16,155 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { Search, Plus, MoreHorizontal, FileText, ClipboardCheck, AlertCircle } from "lucide-react";
+import { Download, FileText, Search } from "lucide-react";
+import ClaimsTable from "@/components/claims/ClaimsTable";
+import ClaimDetailsModal from "@/components/claims/ClaimDetailsModal";
+import NewClaimModal from "@/components/claims/NewClaimModal";
 
-// Sample claims data
-const claimsData = [
+// Mock data for claims
+const mockClaims = [
   {
-    id: "CLM-2025-0482",
-    client: "Robert Johnson",
-    policyNumber: "AUTO-2023-1001",
-    type: "Auto Insurance",
-    date: "May 10, 2025",
-    amount: "$3,450.00",
-    status: "Pending",
-    description: "Vehicle damage due to accident"
-  },
-  {
-    id: "CLM-2025-0475",
-    client: "Emma Wilson",
-    policyNumber: "HOME-2023-4532",
-    type: "Home Insurance",
-    date: "May 8, 2025",
-    amount: "$7,800.00",
-    status: "Under Review",
-    description: "Water damage from plumbing leak"
-  },
-  {
-    id: "CLM-2025-0468",
-    client: "Michael Brown",
-    policyNumber: "LIFE-2024-0087",
-    type: "Life Insurance",
-    date: "May 5, 2025",
-    amount: "$50,000.00",
+    id: "CLM-2023-001",
+    clientName: "John Smith",
+    policyNumber: "POL-1234",
+    date: "2023-05-10",
+    amount: 1500.00,
     status: "Approved",
-    description: "Critical illness claim"
+    description: "Car accident damage repair",
+    documents: ["accident_report.pdf", "repair_estimate.pdf"]
   },
   {
-    id: "CLM-2025-0461",
-    client: "Sarah Davis",
-    policyNumber: "HLTH-2023-7765",
-    type: "Health Insurance",
-    date: "May 3, 2025",
-    amount: "$1,250.00",
-    status: "Paid",
-    description: "Hospital stay for surgery"
+    id: "CLM-2023-002",
+    clientName: "Sarah Johnson",
+    policyNumber: "POL-5678",
+    date: "2023-05-15",
+    amount: 750.00,
+    status: "Pending",
+    description: "Medical expenses from injury",
+    documents: ["medical_report.pdf"]
   },
   {
-    id: "CLM-2025-0453",
-    client: "James Miller",
-    policyNumber: "AUTO-2024-1287",
-    type: "Auto Insurance",
-    date: "Apr 29, 2025",
-    amount: "$2,100.00",
-    status: "Denied",
-    description: "Windshield damage repair"
+    id: "CLM-2023-003",
+    clientName: "Michael Brown",
+    policyNumber: "POL-9012",
+    date: "2023-05-20",
+    amount: 3000.00,
+    status: "Rejected",
+    description: "Property damage from storm",
+    documents: ["property_photos.pdf", "contractor_estimate.pdf"]
   },
   {
-    id: "CLM-2025-0442",
-    client: "Jennifer Taylor",
-    policyNumber: "BUSI-2024-3321",
-    type: "Business Insurance",
-    date: "Apr 25, 2025",
-    amount: "$12,500.00",
-    status: "Paid",
-    description: "Property damage from storm"
+    id: "CLM-2023-004",
+    clientName: "Emily Davis",
+    policyNumber: "POL-3456",
+    date: "2023-05-25",
+    amount: 2000.00,
+    status: "In Review",
+    description: "Home theft insurance claim",
+    documents: ["police_report.pdf", "item_list.pdf"]
   },
+  {
+    id: "CLM-2023-005",
+    clientName: "David Wilson",
+    policyNumber: "POL-7890",
+    date: "2023-05-30",
+    amount: 1200.00,
+    status: "Approved",
+    description: "Travel insurance claim for lost luggage",
+    documents: ["airline_report.pdf"]
+  }
 ];
-
-const claimStatuses = [
-  "All Statuses",
-  "Pending",
-  "Under Review",
-  "Approved",
-  "Paid",
-  "Denied"
-];
-
-const statusColors: Record<string, string> = {
-  "Pending": "bg-amber-100 text-amber-800 hover:bg-amber-100",
-  "Under Review": "bg-blue-100 text-blue-800 hover:bg-blue-100",
-  "Approved": "bg-green-100 text-green-800 hover:bg-green-100",
-  "Paid": "bg-emerald-100 text-emerald-800 hover:bg-emerald-100",
-  "Denied": "bg-red-100 text-red-800 hover:bg-red-100"
-};
 
 const Claims = () => {
+  const [claims] = useState(mockClaims);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("All Statuses");
-  
-  const filteredClaims = claimsData.filter((claim) => {
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [selectedClaim, setSelectedClaim] = useState(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [newClaimModalOpen, setNewClaimModalOpen] = useState(false);
+
+  // Filter claims based on search term and status
+  const filteredClaims = claims.filter((claim) => {
     const matchesSearch = 
       claim.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      claim.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      claim.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       claim.policyNumber.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = selectedStatus === "All Statuses" || claim.status === selectedStatus;
+    const matchesStatus = statusFilter === "All" || claim.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
-  
+
+  const handleViewClaim = (claim) => {
+    setSelectedClaim(claim);
+    setDetailsModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Claims</h1>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <FileText className="mr-2 h-4 w-4" /> Export
-          </Button>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" /> New Claim
-          </Button>
-        </div>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight">Claims Management</h1>
+        <Button className="flex gap-2" onClick={() => setNewClaimModalOpen(true)}>
+          <FileText className="h-4 w-4" />
+          New Claim
+        </Button>
       </div>
       
       <Card>
         <CardHeader>
-          <CardTitle>Claims Management</CardTitle>
+          <CardTitle>Claims Overview</CardTitle>
           <CardDescription>
-            Track and process insurance claims
+            View, filter, and manage all insurance claims
           </CardDescription>
         </CardHeader>
+        
         <CardContent>
-          <div className="mb-4 flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                type="search"
-                placeholder="Search claims..."
-                className="pl-8 w-full"
+                placeholder="Search claims by ID, client or policy..."
+                className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             
-            <div className="w-full sm:w-[180px]">
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {claimStatuses.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+            >
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Statuses</SelectItem>
+                <SelectItem value="Approved">Approved</SelectItem>
+                <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="In Review">In Review</SelectItem>
+                <SelectItem value="Rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Button variant="outline" className="w-full md:w-auto">
+              <Download className="mr-2 h-4 w-4" /> Export
+            </Button>
           </div>
           
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Claim ID</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead className="hidden md:table-cell">Policy #</TableHead>
-                  <TableHead className="hidden lg:table-cell">Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredClaims.length > 0 ? (
-                  filteredClaims.map((claim) => (
-                    <TableRow key={claim.id}>
-                      <TableCell className="font-medium">{claim.id}</TableCell>
-                      <TableCell>{claim.client}</TableCell>
-                      <TableCell className="hidden md:table-cell">{claim.policyNumber}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{claim.date}</TableCell>
-                      <TableCell>{claim.amount}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant="outline"
-                          className={statusColors[claim.status]}
-                        >
-                          {claim.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>
-                              <FileText className="mr-2 h-4 w-4" /> View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <ClipboardCheck className="mr-2 h-4 w-4" /> Process Claim
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <AlertCircle className="mr-2 h-4 w-4" /> Escalate
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No claims found matching your criteria.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <ClaimsTable claims={filteredClaims} onViewClaim={handleViewClaim} />
         </CardContent>
       </Card>
+
+      <ClaimDetailsModal 
+        claim={selectedClaim}
+        open={detailsModalOpen}
+        onOpenChange={setDetailsModalOpen}
+      />
+      
+      <NewClaimModal
+        open={newClaimModalOpen}
+        onOpenChange={setNewClaimModalOpen}
+      />
     </div>
   );
 };
